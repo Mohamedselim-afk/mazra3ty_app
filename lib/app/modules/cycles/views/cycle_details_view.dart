@@ -13,16 +13,11 @@ class CycleDetailsView extends GetView<ExpenseController> {
       body: Column(
         children: [_buildCycleSummary(), Expanded(child: _buildExpensesList())],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:
-            () => Get.toNamed(
-              '/add-expense',
-              arguments: controller.cycleId.value,
-            ),
-        backgroundColor: Colors.green[600],
-        child: Icon(Icons.add),
-      ),
-    );
+floatingActionButton: FloatingActionButton(
+  onPressed: () => Get.toNamed('/add-expense', arguments: controller.cycleId.value),
+  backgroundColor: Colors.green[600],
+  child: Icon(Icons.add),
+),    );
   }
 
   Widget _buildCycleSummary() {

@@ -9,7 +9,15 @@ class HomeController extends GetxController {
     // Add storage logic
   }
 
+  void updateCycle(Cycle updatedCycle) {
+    final index = cycles.indexWhere((cycle) => cycle.id == updatedCycle.id);
+    if (index != -1) {
+      cycles[index] = updatedCycle;
+    }
+  }
+
   void goToCycleDetails(String cycleId) {
     Get.toNamed('/cycle-details', arguments: cycleId);
   }
 }
+
