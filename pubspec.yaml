@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   get: ^4.6.6
+  get_storage: ^2.1.1
   pdf: ^3.8.4
   printing: ^5.9.3
 

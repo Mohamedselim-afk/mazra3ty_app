@@ -1,7 +1,7 @@
 // lib/app/modules/reports/views/report_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mazra3ty_app/app/data/models/cycle_report.dart';
+import '../../../data/models/cycle_report.dart';
 import '../controllers/report_controller.dart';
 
 class ReportView extends GetView<ReportController> {
@@ -9,20 +9,25 @@ class ReportView extends GetView<ReportController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Get.offNamed('/expense/${Get.parameters['cycleId']}'),
+        ),
         title: Text('تقرير الدورة'),
         backgroundColor: Colors.green[600],
         actions: [
           IconButton(
             icon: Icon(Icons.picture_as_pdf),
-            onPressed: () => controller.generateReport(Get.parameters['cycleId']!),
+            onPressed: () => controller.generatePDF(),
           ),
         ],
       ),
       body: Obx(() {
-        final report = controller.cycleReports
-            .firstWhereOrNull((r) => r.cycleId == Get.parameters['cycleId']);
+        final report = controller.cycleReport.value;
         
-        if (report == null) return Center(child: CircularProgressIndicator());
+        if (report == null) {
+          return Center(child: CircularProgressIndicator());
+        }
 
         return SingleChildScrollView(
           padding: EdgeInsets.all(16),

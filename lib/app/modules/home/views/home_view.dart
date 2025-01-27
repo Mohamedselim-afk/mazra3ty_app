@@ -29,14 +29,15 @@ class HomeView extends GetView<HomeController> {
           colors: [Colors.green[50]!, Colors.white],
         ),
       ),
-      child: Column(
-        children: [
-          _buildAddCycleButton(),
-          Expanded(child: Obx(() => _buildCyclesList())),
-        ],
-      ),
+    child: Column(
+      children: [
+        _buildAddCycleButton(),
+        _buildNavigationButtons(),
+        Expanded(child: Obx(() => _buildCyclesList())),
+        
+      ],
     ),
-    bottomNavigationBar: _buildBottomBar(),
+    ),
   );
 
   Widget _buildAddCycleButton() => Container(
@@ -175,44 +176,38 @@ class HomeView extends GetView<HomeController> {
     ),
   );
 
-  Widget _buildBottomBar() => Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-    ),
-    child: BottomNavigationBar(
-      selectedItemColor: Colors.green[600],
-      unselectedItemColor: Colors.grey[600],
-      items: [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'الرئيسية',
+  Widget _buildNavigationButtons() => Padding(
+  padding: EdgeInsets.all(16),
+  child: Row(
+    children: [
+      Expanded(
+        child: ElevatedButton.icon(
+          onPressed: () => Get.offAllNamed('/reports'),
+          icon: Icon(Icons.assessment),
+          label: Text('التقارير'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[600],
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.assessment_outlined),
-          activeIcon: Icon(Icons.assessment),
-          label: 'التقارير',
+      ),
+      SizedBox(width: 16),
+      Expanded(
+        child: ElevatedButton.icon(
+          onPressed: () {},
+          // => Get.offAllNamed('/market'),
+          icon: Icon(Icons.trending_up),
+          label: Text('البورصة'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[600],
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.trending_up_outlined),
-          activeIcon: Icon(Icons.trending_up),
-          label: 'البورصة',
-        ),
-      ],
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            Get.offAllNamed('/');
-            break;
-          case 1:
-            Get.offAllNamed('/reports');
-            break;
-          case 2:
-            Get.offAllNamed('/market');
-            break;
-        }
-      },
-    ),
-  );
+      ),
+    ],
+  ),
+);
+
 }

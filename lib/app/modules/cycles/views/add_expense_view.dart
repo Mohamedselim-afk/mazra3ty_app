@@ -98,31 +98,28 @@ class AddExpenseView extends GetView<ExpenseController> {
             ),
             SizedBox(height: 24),
             ElevatedButton(
-  onPressed: () {
-    if (formKey.currentState!.validate()) {
-      final expense = Expense(
-        id: DateTime.now().toString(),
-        name: nameController.text,
-        date: DateTime.parse(dateController.text),
-        totalAmount: double.parse(totalController.text),
-        paidAmount: double.parse(paidController.text),
-      );
-      controller.addExpense(expense);
-      Get.back(); // العودة إلى الصفحة السابقة بعد الإضافة
-    }
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.green[600],
-    padding: EdgeInsets.symmetric(vertical: 16),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-  ),
-  child: Text(
-    'إضافة المصروف',
-    style: TextStyle(fontSize: 18),
-  ),
-),
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final expense = Expense(
+                    id: DateTime.now().toString(),
+                    name: nameController.text,
+                    date: DateTime.parse(dateController.text),
+                    totalAmount: double.parse(totalController.text),
+                    paidAmount: double.parse(paidController.text),
+                  );
+                  controller.addExpense(expense);
+                  Get.back();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                padding: EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('إضافة المصروف', style: TextStyle(fontSize: 18)),
+            ),
           ],
         ),
       ),
