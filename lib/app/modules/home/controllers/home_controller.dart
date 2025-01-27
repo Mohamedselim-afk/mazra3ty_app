@@ -16,8 +16,8 @@ class HomeController extends GetxController {
     }
   }
 
-  void goToCycleDetails(String cycleId) {
-    Get.toNamed('/cycle-details', arguments: cycleId);
-  }
+void goToCycleDetails(String cycleId) {
+  Get.toNamed('/cycle/${cycleId}');
+}
 }
 

@@ -77,7 +77,7 @@ class HomeView extends GetView<HomeController> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: InkWell(
-                  onTap: () => Get.toNamed('/add-expense'),
+                  onTap: () => controller.goToCycleDetails(cycle.id),
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: EdgeInsets.all(16),
@@ -209,7 +209,7 @@ class HomeView extends GetView<HomeController> {
             Get.offAllNamed('/reports');
             break;
           case 2:
-            Get.offAllNamed('/market'); 
+            Get.offAllNamed('/market');
             break;
         }
       },

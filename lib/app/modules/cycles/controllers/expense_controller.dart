@@ -8,12 +8,12 @@ class ExpenseController extends GetxController {
   final expenses = <Expense>[].obs;
   final cycleId = ''.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    cycleId.value = Get.arguments;
-    loadExpenses();
-  }
+@override
+void onInit() {
+  super.onInit();
+  cycleId.value = Get.parameters['cycleId'] ?? '';
+  loadExpenses();
+}
 
   void loadExpenses() {
     // تنفيذ تحميل البيانات من الدورة المحددة
@@ -22,14 +22,16 @@ class ExpenseController extends GetxController {
     expenses.assignAll(cycle.expenses);
   }
 
-  void addExpense(Expense expense) {
-    final homeController = Get.find<HomeController>();
-    final cycle = homeController.cycles.firstWhere((cycle) => cycle.id == cycleId.value);
-    
-    cycle.expenses.add(expense);
-    expenses.add(expense);
-    
-    // تحديث الدورة في HomeController
-    homeController.updateCycle(cycle);
-  }
+void addExpense(Expense expense) {
+  final homeController = Get.find<HomeController>();
+  final cycle = homeController.cycles.firstWhere((cycle) => cycle.id == cycleId.value);
+  
+  cycle.expenses.add(expense);
+  expenses.add(expense);
+  
+  homeController.updateCycle(cycle);
+  
+  // التنقل إلى صفحة التقارير
+  Get.toNamed('/reports/${cycleId.value}');
+}
 }
