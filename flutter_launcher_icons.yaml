@@ -1,0 +1,19 @@
+# flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icone/mazzraty.png"
+
+  android: "launcher_icon"
+  # image_path_android: "assets/icone/mazzraty.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  # adaptive_icon_background: "assets/icone/mazzraty.png"
+  # adaptive_icon_foreground: "assets/icone/mazzraty.png"
+  # adaptive_icon_monochrome: "assets/icone/mazzraty.png"
+
+  ios: true
+  # image_path_ios: "assets/icone/mazzraty.png"
+  remove_alpha_channel_ios: true
+  # image_path_ios_dark_transparent: "assets/icone/mazzraty.png"
+  # image_path_ios_tinted_grayscale: "assets/icone/mazzraty.png"
+  # desaturate_tinted_to_grayscale_ios: true
+
+
