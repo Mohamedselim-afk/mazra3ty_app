@@ -1,4 +1,4 @@
-package com.mazr3ty.mazra3ty_app
+package com.mazr3ty.app
 
 import io.flutter.embedding.android.FlutterActivity
 

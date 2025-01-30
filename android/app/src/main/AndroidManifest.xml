@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mazr3ty.app"> 
+    package="com.mazr3ty.app">
     <application
         android:label="مزرعتي"
         android:name="${applicationName}"

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/theme/modern_theme.dart';
 import '../../../data/models/cycle_report.dart';
 import '../controllers/report_controller.dart';
 
@@ -7,93 +8,100 @@ class ReportView extends GetView<ReportController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Get.offAllNamed('/'),
-        ),
-        title: Text('تقارير الدورات'),
-        backgroundColor: Colors.green[600],
-      ),
+      appBar: _buildAppBar(),
       body: Obx(() {
+        if (controller.isLoading.value) {
+          return _buildLoadingView();
+        }
+        
         if (controller.reports.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.assignment_outlined, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'لا توجد تقارير',
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyView();
         }
 
-        return ListView.builder(
-          padding: EdgeInsets.all(16),
-          itemCount: controller.reports.length,
-          itemBuilder: (context, index) {
-            final report = controller.reports[index];
-            return _buildReportCard(report);
-          },
-        );
+        return _buildReportsList();
       }),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () => Get.offAllNamed('/'),
+      ),
+      title: Text(
+        'تقارير الدورات',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: Colors.green[600],
+    );
+  }
+
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'جاري تحميل التقارير...',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.assignment_outlined,
+            size: 64,
+            color: Colors.grey,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'لا توجد تقارير',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportsList() {
+    return ListView.builder(
+      padding: EdgeInsets.all(16),
+      itemCount: controller.reports.length,
+      itemBuilder: (context, index) {
+        final report = controller.reports[index];
+        return _buildReportCard(report);
+      },
     );
   }
 
   Widget _buildReportCard(CycleReport report) {
     return Card(
       margin: EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
-          ListTile(
-            title: Text(
-              report.cycleName,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              'من ${report.startDate.toString().split(' ')[0]} إلى ${report.expectedEndDate.toString().split(' ')[0]}',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.picture_as_pdf, color: Colors.blue),
-                  onPressed: () => controller.generatePDF(report),
-                  tooltip: 'تصدير PDF',
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => Get.dialog(
-                    AlertDialog(
-                      title: Text('تأكيد الحذف'),
-                      content: Text('هل أنت متأكد من حذف دورة ${report.cycleName}؟'),
-                      actions: <Widget>[
-                        TextButton(
-                          child: Text('إلغاء'),
-                          onPressed: () => Get.back(),
-                        ),
-                        TextButton(
-                          child: Text(
-                            'حذف',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                          onPressed: () {
-                            Get.back();
-                            controller.deleteCycle(report.cycleId);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  tooltip: 'حذف الدورة',
-                ),
-              ],
-            ),
-          ),
+          _buildReportHeader(report),
           Divider(),
           Padding(
             padding: EdgeInsets.all(16),
@@ -106,52 +114,259 @@ class ReportView extends GetView<ReportController> {
               ],
             ),
           ),
-          ExpansionTile(
-            title: Text('تفاصيل المصروفات'),
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: [
-                    DataColumn(label: Text('الصنف')),
-                    DataColumn(label: Text('التاريخ')),
-                    DataColumn(label: Text('المبلغ الكلي')),
-                    DataColumn(label: Text('المدفوع')),
-                    DataColumn(label: Text('المتبقي')),
-                  ],
-                  rows: report.expenses.map((expense) {
-                    return DataRow(cells: [
-                      DataCell(Text(expense.name)),
-                      DataCell(Text(expense.date.toString().split(' ')[0])),
-                      DataCell(Text('${expense.totalAmount} ج.م')),
-                      DataCell(Text('${expense.paidAmount} ج.م')),
-                      DataCell(Text('${expense.totalAmount - expense.paidAmount} ج.م')),
-                    ]);
-                  }).toList(),
+          _buildExpensesDetails(report),
+          _buildCardActions(report),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportHeader(CycleReport report) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green[50],
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  report.cycleName,
+                  style: ModernTheme.subtitleStyle.copyWith(
+                    color: Colors.green[800],
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: 4),
+                Text(
+                  'من ${report.startDate.toString().split(' ')[0]} إلى ${report.expectedEndDate.toString().split(' ')[0]}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildStatusChip(report),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(CycleReport report) {
+    final now = DateTime.now();
+    final isActive = now.isBefore(report.expectedEndDate);
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.green[100] : Colors.orange[100],
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        isActive ? 'نشط' : 'منتهي',
+        style: TextStyle(
+          color: isActive ? Colors.green[800] : Colors.orange[800],
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    final isNegativeValue = label.contains('المتبقي') && 
+        double.tryParse(value.replaceAll(' ج.م', ''))! > 0;
+    
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isNegativeValue ? Colors.red : Colors.black,
+              fontSize: 16,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildExpensesDetails(CycleReport report) {
+    return ExpansionTile(
+      title: Text(
+        'تفاصيل المصروفات',
+        style: TextStyle(
+          color: Colors.green[700],
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: [
+              DataColumn(label: Text('الصنف')),
+              DataColumn(label: Text('التاريخ')),
+              DataColumn(label: Text('المبلغ الكلي')),
+              DataColumn(label: Text('المدفوع')),
+              DataColumn(label: Text('المتبقي')),
+            ],
+            rows: report.expenses.map((expense) {
+              final remaining = expense.totalAmount - expense.paidAmount;
+              return DataRow(cells: [
+                DataCell(Text(expense.name)),
+                DataCell(Text(expense.date.toString().split(' ')[0])),
+                DataCell(Text('${expense.totalAmount} ج.م')),
+                DataCell(Text('${expense.paidAmount} ج.م')),
+                DataCell(Text(
+                  '${remaining} ج.م',
+                  style: TextStyle(
+                    color: remaining > 0 ? Colors.red : Colors.green,
+                  ),
+                )),
+              ]);
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardActions(CycleReport report) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.all(8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: label.contains('المتبقي') ? Colors.red : Colors.black,
-            ),
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf, color: Colors.blue),
+            onPressed: () => controller.generatePDF(report),
+            tooltip: 'تصدير PDF',
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _showDeleteConfirmationDialog(report),
+            tooltip: 'حذف الدورة',
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(CycleReport report) {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('تأكيد الحذف'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('اختر طريقة حذف دورة ${report.cycleName}:'),
+            SizedBox(height: 16),
+            _buildDeleteOption(
+              icon: Icons.phone_android,
+              title: 'حذف من التطبيق فقط',
+              subtitle: 'سيتم حذف البيانات من التطبيق مع الاحتفاظ بها على السيرفر',
+              onTap: () {
+                Get.back();
+                controller.deleteCycle(report.cycleId, DeleteMode.localOnly);
+              },
+            ),
+            SizedBox(height: 12),
+            _buildDeleteOption(
+              icon: Icons.cloud_off,
+              title: 'حذف كامل',
+              subtitle: 'سيتم حذف البيانات نهائياً من التطبيق والسيرفر',
+              isDestructive: true,
+              onTap: () {
+                Get.back();
+                controller.deleteCycle(report.cycleId, DeleteMode.complete);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: Text('إلغاء'),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isDestructive ? Colors.red[100]! : Colors.grey[300]!,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: isDestructive ? Colors.red[50] : Colors.grey[50],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red : Colors.grey[700],
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDestructive ? Colors.red : Colors.black,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
