@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mazra3ty_app/app/modules/cycles/bindings/cycle_details_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/login/auth_controller.dart';
@@ -75,9 +76,7 @@ class AppPages {
     GetPage(
       name: Routes.CYCLE_DETAILS,
       page: () => CycleDetailsView(),
-      binding: BindingsBuilder(() {
-        Get.lazyPut(() => ExpenseController());
-      }),
+      binding: CycleDetailsBinding(),
       middlewares: [AuthMiddleware()],
     ),
 
@@ -86,7 +85,7 @@ class AppPages {
       name: Routes.ADD_EXPENSE,
       page: () => AddExpenseView(),
       binding: BindingsBuilder(() {
-        Get.lazyPut(() => ExpenseController());
+        Get.put(() => ExpenseController());
       }),
       middlewares: [AuthMiddleware()],
     ),
@@ -105,6 +104,7 @@ class AppPages {
 class AuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
+    print('Current route: $route'); // للتصحيح
     // تخطي التحقق لصفحة تسجيل الدخول والـ splash
     if (route == Routes.LOGIN || route == Routes.SPLASH) {
       return null;
@@ -113,11 +113,13 @@ class AuthMiddleware extends GetMiddleware {
     // التحقق من حالة تسجيل الدخول
     try {
       final authController = Get.find<AuthController>();
+      print('Auth status: ${authController.isLoggedIn.value}'); // للتصحيح
       if (!authController.isLoggedIn.value) {
         return RouteSettings(name: Routes.LOGIN);
       }
       return null;
     } catch (e) {
+      print('Auth error: $e'); // للتصحيح
       // إذا لم يتم العثور على AuthController
       return RouteSettings(name: Routes.LOGIN);
     }

@@ -92,7 +92,7 @@ class HomeView extends GetView<HomeController> {
               child: _buildNavCard(
                 'التقارير',
                 Icons.assessment_outlined,
-                () => Get.toNamed('/reports'),
+              () => Get.toNamed(Routes.REPORTS), // تم التعديل هنا
                 gradient: ModernTheme.primaryGradient,
               ),
             ),
@@ -440,7 +440,7 @@ class HomeView extends GetView<HomeController> {
       infinite: false,
       duration: Duration(seconds: 2),
       child: FloatingActionButton.extended(
-        onPressed: () => Get.toNamed('/add-cycle'),
+      onPressed: () => Get.toNamed(Routes.ADD_CYCLE), // تم التعديل هنا
         backgroundColor: Colors.green[700],
         icon: Icon(Icons.add_circle_outline, color: Colors.white),
         label: Text('إضافة دورة', style: TextStyle(color: Colors.white)),

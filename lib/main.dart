@@ -6,6 +6,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mazra3ty_app/app/data/providers/remote_config.dart';
+import 'package:mazra3ty_app/app/modules/login/auth_controller.dart';
 import 'firebase_options.dart';
 import 'app/routes/app_pages.dart';
 import 'app/core/theme/app_theme.dart';
@@ -56,6 +57,10 @@ class MyApp extends StatelessWidget {
       // المسارات
       initialRoute: Routes.SPLASH,
       getPages: AppPages.routes,
+      initialBinding: BindingsBuilder(() {
+    Get.put(AuthController(), permanent: true);
+  }),
+
       
       // الثيم
       theme: ThemeData(

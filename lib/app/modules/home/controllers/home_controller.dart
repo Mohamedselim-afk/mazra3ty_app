@@ -15,7 +15,7 @@ class HomeController extends GetxController {
   final cycles = <Cycle>[].obs;
   final isLoading = true.obs;
   final isFeatureEnabled = true.obs;
-  
+
   @override
   void onInit() {
     super.onInit();
@@ -32,76 +32,76 @@ class HomeController extends GetxController {
   }
 
   Future<void> _initializeRemoteConfig() async {
-  await _remoteConfig.initialize();
-  
-  // Check maintenance mode
-  if (_remoteConfig.isMaintenanceMode) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('تنبيه'),
-        content: Text('التطبيق في وضع الصيانة حالياً'),
-        actions: [
-          TextButton(
-            child: Text('حسناً'),
-            onPressed: () => Get.back(),
-          ),
-        ],
-      ),
-    );
-    return;
+    await _remoteConfig.initialize();
+
+    // Check maintenance mode
+    if (_remoteConfig.isMaintenanceMode) {
+      Get.dialog(
+        AlertDialog(
+          title: Text('تنبيه'),
+          content: Text('التطبيق في وضع الصيانة حالياً'),
+          actions: [
+            TextButton(
+              child: Text('حسناً'),
+              onPressed: () => Get.back(),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Check required update
+    if (_remoteConfig.requiresUpdate) {
+      Get.dialog(
+        AlertDialog(
+          title: Text('تحديث مطلوب'),
+          content: Text('يرجى تحديث التطبيق إلى أحدث إصدار'),
+          actions: [
+            TextButton(
+              child: Text('تحديث'),
+              onPressed: () {
+                // TODO: Implement app store redirection
+              },
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Update feature flags
+    isFeatureEnabled.value = _remoteConfig.getFeatureFlag('new_features');
   }
-
-  // Check required update
-  if (_remoteConfig.requiresUpdate) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('تحديث مطلوب'),
-        content: Text('يرجى تحديث التطبيق إلى أحدث إصدار'),
-        actions: [
-          TextButton(
-            child: Text('تحديث'),
-            onPressed: () {
-              // TODO: Implement app store redirection
-            },
-          ),
-        ],
-      ),
-    );
-    return;
-  }
-
-  // Update feature flags
-  isFeatureEnabled.value = _remoteConfig.getFeatureFlag('new_features');
-}
-
 
   Future<void> loadCycles() async {
     try {
       isLoading.value = true;
-      
+
       // Load from both local storage and Firebase
       final localCycles = await storageProvider.loadCycles();
       final firebaseSnapshot = await _firestore.collection('cycles').get();
-      final firebaseCycles = firebaseSnapshot.docs.map((doc) => Cycle.fromJson(doc.data())).toList();
-      
+      final firebaseCycles = firebaseSnapshot.docs
+          .map((doc) => Cycle.fromJson(doc.data()))
+          .toList();
+
       // Merge cycles, prioritizing Firebase data
       final Map<String, Cycle> mergedCycles = {};
-      
+
       // Add local cycles
       for (var cycle in localCycles) {
         mergedCycles[cycle.id] = cycle;
       }
-      
+
       // Override with Firebase cycles
       for (var cycle in firebaseCycles) {
         mergedCycles[cycle.id] = cycle;
       }
-      
+
       cycles.assignAll(mergedCycles.values.toList());
-      
+
       // Sync local storage with merged data
       await storageProvider.saveCycles(cycles);
-      
     } catch (e) {
       print('Error loading cycles: $e');
       Get.snackbar(
@@ -115,18 +115,38 @@ class HomeController extends GetxController {
     }
   }
 
-void goToCycleDetails(String cycleId) {
-  if (!_remoteConfig.getFeatureFlag('cycle_details')) {
-    Get.snackbar(
-      'تنبيه',
-      'هذه الميزة غير متاحة حالياً',
-      backgroundColor: Colors.orange[100],
-      colorText: Colors.orange[800],
-    );
-    return;
+// إذا كنت تفضل حلاً سريعاً بدون تغيير Firebase Console، يمكننا تعديل goToCycleDetails في HomeController مؤقتاً:
+//   void goToCycleDetails(String cycleId) {
+//   // نتجاهل مؤقتاً التحقق من feature flag
+//   Get.toNamed('/cycle-details', arguments: cycleId);
+// }
+
+  void goToCycleDetails(String cycleId) {
+    // طباعة للتصحيح
+    print('All feature flags: ${_remoteConfig.featureFlags}');
+    print(
+        'Cycle details flag: ${_remoteConfig.isFeatureEnabled('cycle_details')}');
+
+    // تجاهل التحقق مؤقتاً إذا لم يتم تهيئة Remote Config بشكل صحيح
+    if (!_remoteConfig.remoteConfig.lastFetchStatus
+        .toString()
+        .contains('success')) {
+      Get.toNamed('/cycle-details', arguments: cycleId);
+      return;
+    }
+
+    if (!_remoteConfig.isFeatureEnabled('cycle_details')) {
+      Get.snackbar(
+        'تنبيه',
+        'هذه الميزة غير متاحة حالياً',
+        backgroundColor: Colors.orange[100],
+        colorText: Colors.orange[800],
+      );
+      return;
+    }
+
+    Get.toNamed('/cycle-details', arguments: cycleId);
   }
-  Get.toNamed('/cycle-details', arguments: cycleId);
-}
 
   Future<void> addNewCycle(Cycle cycle) async {
     try {
@@ -137,13 +157,13 @@ void goToCycleDetails(String cycleId) {
 
       // Add to local list
       cycles.add(cycle);
-      
+
       // Save to local storage
       await storageProvider.saveCycles(cycles);
-      
+
       // Save to Firebase
       await _firestore.collection('cycles').doc(cycle.id).set(cycle.toJson());
-      
+
       Get.back();
       Get.snackbar(
         'تم بنجاح',
@@ -164,7 +184,8 @@ void goToCycleDetails(String cycleId) {
 
   bool _validateNewCycle(Cycle cycle) {
     // Add any validation logic based on Remote Config
-    final maxChicksCount = _remoteConfig.remoteConfig.getInt('max_chicks_count');
+    final maxChicksCount =
+        _remoteConfig.remoteConfig.getInt('max_chicks_count');
     if (maxChicksCount > 0 && cycle.chicksCount > maxChicksCount) {
       Get.snackbar(
         'خطأ',
@@ -183,15 +204,16 @@ void goToCycleDetails(String cycleId) {
       if (index != -1) {
         // Update local list
         cycles[index] = updatedCycle;
-        
+
         // Update local storage
         await storageProvider.saveCycles(cycles);
-        
+
         // Update Firebase
-        await _firestore.collection('cycles')
+        await _firestore
+            .collection('cycles')
             .doc(updatedCycle.id)
             .update(updatedCycle.toJson());
-            
+
         Get.snackbar(
           'تم بنجاح',
           'تم تحديث الدورة ${updatedCycle.name}',
@@ -215,7 +237,7 @@ void goToCycleDetails(String cycleId) {
     try {
       cycles.removeWhere((cycle) => cycle.id == cycleId);
       await storageProvider.saveCycles(cycles);
-      
+
       Get.snackbar(
         'تم الحذف',
         'تم حذف الدورة من التطبيق',
@@ -233,13 +255,13 @@ void goToCycleDetails(String cycleId) {
     try {
       // Delete from local list
       cycles.removeWhere((cycle) => cycle.id == cycleId);
-      
+
       // Delete from local storage
       await storageProvider.saveCycles(cycles);
-      
+
       // Delete from Firebase
       await _firestore.collection('cycles').doc(cycleId).delete();
-      
+
       Get.snackbar(
         'تم الحذف',
         'تم حذف الدورة من التطبيق والسيرفر',
@@ -257,7 +279,7 @@ void goToCycleDetails(String cycleId) {
     try {
       final cycle = cycles.firstWhere((c) => c.id == cycleId);
       await _firestore.collection('cycles').doc(cycleId).set(cycle.toJson());
-      
+
       Get.snackbar(
         'تم المزامنة',
         'تم مزامنة البيانات مع السيرفر',
@@ -280,11 +302,13 @@ void goToCycleDetails(String cycleId) {
     try {
       isLoading.value = true;
       final firebaseSnapshot = await _firestore.collection('cycles').get();
-      final firebaseCycles = firebaseSnapshot.docs.map((doc) => Cycle.fromJson(doc.data())).toList();
-      
+      final firebaseCycles = firebaseSnapshot.docs
+          .map((doc) => Cycle.fromJson(doc.data()))
+          .toList();
+
       cycles.assignAll(firebaseCycles);
       await storageProvider.saveCycles(cycles);
-      
+
       Get.snackbar(
         'تم التحديث',
         'تم تحديث البيانات من السيرفر',

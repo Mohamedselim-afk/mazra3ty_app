@@ -13,6 +13,11 @@ class RemoteConfigService {
       ));
 
       await remoteConfig.setDefaults({
+        'enable_new_features': false,
+        'enable_reports': true,
+        'enable_market_prices': true,
+        'enable_cycle_details': true,
+
         'is_maintenance_mode': false,
         'app_version': '1.0.0',
         'required_update': false,
@@ -81,8 +86,8 @@ class RemoteConfigService {
     }
   }
 
-  // Check if feature is enabled
   bool isFeatureEnabled(String feature) {
-    return getFeatureFlag('enable_$feature');
+    final String flagKey = feature.startsWith('enable_') ? feature : 'enable_$feature';
+    return featureFlags[flagKey] ?? true; // افتراضياً true إذا لم يتم العثور على القيمة
   }
 }
