@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../core/theme/modern_theme.dart';
+import '../../../data/models/expense.dart';
 import '../controllers/expense_controller.dart';
 
 class CycleDetailsView extends GetView<ExpenseController> {
@@ -230,9 +231,8 @@ class CycleDetailsView extends GetView<ExpenseController> {
                     margin: EdgeInsets.only(bottom: 16),
                     decoration: ModernTheme.modernCardDecoration,
                     child: Theme(
-                      data: Theme.of(
-                        Get.context!,
-                      ).copyWith(dividerColor: Colors.transparent),
+                      data: Theme.of(Get.context!)
+                          .copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
                         tilePadding: EdgeInsets.all(16),
                         childrenPadding: EdgeInsets.all(16),
@@ -249,16 +249,17 @@ class CycleDetailsView extends GetView<ExpenseController> {
                           'المتبقي: $remainingAmount ج.م',
                           style: TextStyle(color: Colors.red),
                         ),
-                        children:
-                            expenses.map((expense) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 8),
-                                padding: EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Row(
+                        children: expenses.map((expense) {
+                          return Container(
+                            margin: EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -288,8 +289,30 @@ class CycleDetailsView extends GetView<ExpenseController> {
                                     ),
                                   ],
                                 ),
-                              );
-                            }).toList(),
+                                SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon:
+                                          Icon(Icons.edit, color: Colors.blue),
+                                      onPressed: () =>
+                                          _showEditExpenseDialog(expense),
+                                      tooltip: 'تعديل',
+                                    ),
+                                    IconButton(
+                                      icon:
+                                          Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () =>
+                                          _showDeleteConfirmation(expense),
+                                      tooltip: 'حذف',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ),
@@ -300,6 +323,166 @@ class CycleDetailsView extends GetView<ExpenseController> {
         ),
       );
     });
+  }
+
+// في دالة _showEditExpenseDialog
+  void _showEditExpenseDialog(Expense expense) {
+    final nameController = TextEditingController(text: expense.name);
+    final totalController =
+        TextEditingController(text: expense.totalAmount.toString());
+    final paidController =
+        TextEditingController(text: expense.paidAmount.toString());
+    final dateController = TextEditingController(
+      text: expense.date.toString().split(' ')[0],
+    );
+
+    DateTime selectedDate = expense.date;
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('تعديل المصروف'),
+        content: SingleChildScrollView(
+          child: Container(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // حقل الاسم
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'اسم المصروف',
+                    prefixIcon: Icon(Icons.shopping_bag_outlined),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // حقل المبلغ الكلي
+                TextField(
+                  controller: totalController,
+                  decoration: InputDecoration(
+                    labelText: 'المبلغ الكلي',
+                    prefixIcon: Icon(Icons.monetization_on_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(height: 16),
+
+                // حقل المبلغ المدفوع
+                TextField(
+                  controller: paidController,
+                  decoration: InputDecoration(
+                    labelText: 'المبلغ المدفوع',
+                    prefixIcon: Icon(Icons.payment_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(height: 16),
+
+                // حقل التاريخ
+                TextField(
+                  controller: dateController,
+                  decoration: InputDecoration(
+                    labelText: 'التاريخ',
+                    prefixIcon: Icon(Icons.calendar_today),
+                  ),
+                  readOnly: true,
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: Get.context!,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      selectedDate = picked;
+                      dateController.text = picked.toString().split(' ')[0];
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text('إلغاء'),
+            onPressed: () => Get.back(),
+          ),
+          ElevatedButton(
+            child: Text('حفظ'),
+            onPressed: () {
+              // التحقق من صحة القيم المدخلة
+              try {
+                final newTotal = double.parse(totalController.text);
+                final newPaid = double.parse(paidController.text);
+
+                if (nameController.text.isEmpty) {
+                  Get.snackbar(
+                    'خطأ',
+                    'يرجى إدخال اسم المصروف',
+                    backgroundColor: Colors.red[100],
+                    colorText: Colors.red[800],
+                  );
+                  return;
+                }
+
+                if (newPaid > newTotal) {
+                  Get.snackbar(
+                    'خطأ',
+                    'المبلغ المدفوع لا يمكن أن يكون أكبر من المبلغ الكلي',
+                    backgroundColor: Colors.red[100],
+                    colorText: Colors.red[800],
+                  );
+                  return;
+                }
+
+                controller.updateExpense(
+                  expense,
+                  newName: nameController.text,
+                  newTotalAmount: newTotal,
+                  newPaidAmount: newPaid,
+                  newDate: selectedDate,
+                );
+              } catch (e) {
+                Get.snackbar(
+                  'خطأ',
+                  'يرجى التأكد من صحة القيم المدخلة',
+                  backgroundColor: Colors.red[100],
+                  colorText: Colors.red[800],
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(dynamic expense) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('تأكيد الحذف'),
+        content: Text('هل أنت متأكد من حذف هذا المصروف؟'),
+        actions: [
+          TextButton(
+            child: Text('إلغاء'),
+            onPressed: () => Get.back(),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: Text('حذف'),
+            onPressed: () {
+              // Call controller method to delete expense
+              controller.deleteExpense(expense);
+              Get.back();
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState() {
@@ -332,8 +515,8 @@ class CycleDetailsView extends GetView<ExpenseController> {
       // infinite: true,
       duration: Duration(seconds: 2),
       child: FloatingActionButton.extended(
-        onPressed:
-            () => Get.toNamed('/add-expense/${controller.cycleId.value}'),
+        onPressed: () =>
+            Get.toNamed('/add-expense/${controller.cycleId.value}'),
         backgroundColor: Colors.green[700],
         icon: Icon(Icons.add_circle_outline),
         label: Text('إضافة مصروف'),

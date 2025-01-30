@@ -11,12 +11,12 @@ class ExpenseController extends GetxController {
   final expenses = <Expense>[].obs;
   final cycleId = ''.obs;
 
-@override
-void onInit() {
-  super.onInit();
-  cycleId.value = Get.arguments as String;
-  loadExpenses();
-}
+  @override
+  void onInit() {
+    super.onInit();
+    cycleId.value = Get.arguments as String;
+    loadExpenses();
+  }
 
   void loadExpenses() {
     // تنفيذ تحميل البيانات من الدورة المحددة
@@ -27,24 +27,77 @@ void onInit() {
     expenses.assignAll(cycle.expenses);
   }
 
-void addExpense(Expense expense) {
+  void addExpense(Expense expense) {
+    final homeController = Get.find<HomeController>();
+    final cycle =
+        homeController.cycles.firstWhere((c) => c.id == cycleId.value);
+
+    cycle.expenses.add(expense);
+    expenses.add(expense);
+    homeController.updateCycle(cycle);
+    Get.back();
+
+    Get.snackbar(
+      'تم بنجاح',
+      'تم إضافة المصروف',
+      backgroundColor: Colors.green[100],
+      colorText: Colors.green[800],
+    );
+
+    // Get.toNamed(Routes.REPORTS, arguments: cycleId.value);
+    // final reportController = Get.put(ReportController());
+    // reportController.generatePDF();
+  }
+
+  // دالة تحديث المصروف
+void updateExpense(Expense expense, {
+  required String newName,
+  required double newTotalAmount,
+  required double newPaidAmount,
+  required DateTime newDate,
+}) {
   final homeController = Get.find<HomeController>();
   final cycle = homeController.cycles.firstWhere((c) => c.id == cycleId.value);
   
-  cycle.expenses.add(expense);
-  expenses.add(expense);
+  // تحديث جميع قيم المصروف
+  expense.name = newName;
+  expense.totalAmount = newTotalAmount;
+  expense.paidAmount = newPaidAmount;
+  expense.date = newDate;
+  
+  // تحديث القائمة المحلية والدورة
+  expenses.refresh();
   homeController.updateCycle(cycle);
+
+  // العودة للشاشة السابقة
   Get.back();
+  loadExpenses(); // إعادة تحميل البيانات
 
   Get.snackbar(
     'تم بنجاح',
-    'تم إضافة المصروف',
-    backgroundColor: Colors.green[100],
-    colorText: Colors.green[800],
+    'تم تحديث المصروف',
+    backgroundColor: Colors.blue[100],
+    colorText: Colors.blue[800],
   );
-  
-  // Get.toNamed(Routes.REPORTS, arguments: cycleId.value); 
-  // final reportController = Get.put(ReportController());
-  // reportController.generatePDF();
 }
+
+  // دالة حذف المصروف
+  void deleteExpense(Expense expense) {
+    final homeController = Get.find<HomeController>();
+    final cycle =
+        homeController.cycles.firstWhere((c) => c.id == cycleId.value);
+
+    // حذف المصروف من القائمة المحلية والدورة
+    cycle.expenses.remove(expense);
+    expenses.remove(expense);
+
+    homeController.updateCycle(cycle);
+
+    Get.snackbar(
+      'تم بنجاح',
+      'تم حذف المصروف',
+      backgroundColor: Colors.red[100],
+      colorText: Colors.red[800],
+    );
+  }
 }

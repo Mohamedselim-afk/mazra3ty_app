@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1089914620195",
+    "project_id": "mazr3ty-app",
+    "storage_bucket": "mazr3ty-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089914620195:android:c8517ac210689ff2b7e496",
+        "android_client_info": {
+          "package_name": "com.mazr3ty.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANAPvsL0EmRjr_YJqL5RnV2GDr0JCgguc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089914620195:android:c7bc9eaaca57876bb7e496",
+        "android_client_info": {
+          "package_name": "com.mazr3ty.mazra3ty_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANAPvsL0EmRjr_YJqL5RnV2GDr0JCgguc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

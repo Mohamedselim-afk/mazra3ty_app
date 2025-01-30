@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:animate_do/animate_do.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 import '../../../core/theme/modern_theme.dart';
 
@@ -100,10 +101,11 @@ class HomeView extends GetView<HomeController> {
           Expanded(
             child: ZoomIn(
               delay: Duration(milliseconds: 500),
-              child: _buildNavCard(
+              child: // In HomeView
+                  _buildNavCard(
                 'البورصة',
                 Icons.trending_up,
-                () {},
+                () => Get.toNamed(Routes.MARKET), // Update this line
                 gradient: ModernTheme.secondaryGradient,
               ),
             ),
@@ -340,18 +342,93 @@ class HomeView extends GetView<HomeController> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.nature_people_outlined,
-              size: 100,
-              color: Colors.green[300],
+            Container(
+              padding: EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.2),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // الخيار 1: كتكوت
+                  Icon(
+                    Icons.flutter_dash, // شكل كتكوت جميل
+                    size: 60,
+                    color: Colors.yellow[600],
+                  ),
+
+                  // أو يمكنك استخدام أحد هذه الخيارات:
+                  // Icons.pets_outlined - كتكوت بتفاصيل خطية
+                  // Icons.emoji_nature - شكل طبيعي
+                  // Icons.flutter_dash - شكل لطيف لطائر
+
+                  // عشب في الأسفل
+                  // Positioned(
+                  //   bottom: 0,
+                  //   child: Icon(
+                  //     Icons.grass,
+                  //     size: 40,
+                  //     color: Colors.green[400],
+                  //   ),
+                  // ),
+                  // شمس في الأعلى
+                  Positioned(
+                    top: -5,
+                    right: -3,
+                    child: Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 20,
+                      color: Colors.orange[300],
+                    ),
+                  ),
+                ],
+              ),
             ),
             SizedBox(height: 24),
-            Text('لا توجد دورات حالية', style: ModernTheme.subtitleStyle),
-            SizedBox(height: 8),
             Text(
-              'ابدأ بإضافة دورة جديدة',
-              style: TextStyle(color: Colors.grey[600]),
+              'لا توجد دورات حالية',
+              style: ModernTheme.subtitleStyle.copyWith(
+                color: Colors.green[800],
+              ),
             ),
+            // SizedBox(height: 8),
+            // Container(
+            //   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //   decoration: BoxDecoration(
+            //     color: Colors.green[50],
+            //     borderRadius: BorderRadius.circular(20),
+            //     border: Border.all(
+            //       color: Colors.green[100]!,
+            //       width: 1,
+            //     ),
+            //   ),
+            //   child: Row(
+            //     mainAxisSize: MainAxisSize.min,
+            //     children: [
+            //       Icon(
+            //         Icons.add_circle_outline,
+            //         size: 20,
+            //         color: Colors.green[600],
+            //       ),
+            //       SizedBox(width: 8),
+            //       Text(
+            //         'ابدأ بإضافة دورة جديدة',
+            //         style: TextStyle(
+            //           color: Colors.green[600],
+            //           fontWeight: FontWeight.w500,
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       ),

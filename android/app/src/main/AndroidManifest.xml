@@ -1,6 +1,7 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mazr3ty.app"> 
     <application
-        android:label="mazra3ty_app"
+        android:label="مزرعتي"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
