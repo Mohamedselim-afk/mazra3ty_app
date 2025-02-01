@@ -22,6 +22,43 @@ class HomeController extends GetxController {
     _initializeApp();
   }
 
+  // في HomeController أضف هذه الدالة
+  Future<void> testFirebaseConnection() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // محاولة إضافة بيانات اختبار
+      print('Testing Firebase connection...');
+
+      final testData = {
+        'test': true,
+        'timestamp': FieldValue.serverTimestamp()
+      };
+
+      await firestore.collection('test').add(testData);
+      print('Test data added successfully');
+
+      // محاولة قراءة البيانات
+      final snapshot = await firestore.collection('test').get();
+      print('Retrieved ${snapshot.docs.length} test documents');
+
+      Get.snackbar(
+        'تم الاختبار بنجاح',
+        'تم الاتصال بـ Firebase بنجاح',
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[800],
+      );
+    } catch (e) {
+      print('Firebase test failed: $e');
+      Get.snackbar(
+        'خطأ',
+        'فشل الاتصال بـ Firebase: $e',
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+      );
+    }
+  }
+
   Future<void> _initializeApp() async {
     try {
       await _initializeRemoteConfig();
@@ -115,12 +152,6 @@ class HomeController extends GetxController {
     }
   }
 
-// إذا كنت تفضل حلاً سريعاً بدون تغيير Firebase Console، يمكننا تعديل goToCycleDetails في HomeController مؤقتاً:
-//   void goToCycleDetails(String cycleId) {
-//   // نتجاهل مؤقتاً التحقق من feature flag
-//   Get.toNamed('/cycle-details', arguments: cycleId);
-// }
-
   void goToCycleDetails(String cycleId) {
     // طباعة للتصحيح
     print('All feature flags: ${_remoteConfig.featureFlags}');
@@ -149,38 +180,75 @@ class HomeController extends GetxController {
   }
 
   Future<void> addNewCycle(Cycle cycle) async {
-    try {
-      // Validate using Remote Config
-      if (!_validateNewCycle(cycle)) {
-        return;
-      }
+  try {
+    print('Starting to add new cycle: ${cycle.id}');
+    print('Cycle data: ${cycle.toJson()}');
 
-      // Add to local list
-      cycles.add(cycle);
+    // Add to local list first
+    cycles.add(cycle);
+    print('Added to local list');
 
-      // Save to local storage
-      await storageProvider.saveCycles(cycles);
+    // Save to Firebase
+    print('Attempting to save to Firebase...');
+    await _firestore.collection('cycles').doc(cycle.id).set({
+      'id': cycle.id,
+      'name': cycle.name,
+      'startDate': cycle.startDate.toIso8601String(),
+      'expectedSaleDate': cycle.expectedSaleDate.toIso8601String(),
+      'chicksCount': cycle.chicksCount,
+      'expenses': cycle.expenses.map((e) => e.toJson()).toList(),
+    });
+    print('Successfully saved to Firebase');
 
-      // Save to Firebase
-      await _firestore.collection('cycles').doc(cycle.id).set(cycle.toJson());
+    // Save to local storage
+    await storageProvider.saveCycles(cycles);
+    print('Saved to local storage');
 
-      Get.back();
-      Get.snackbar(
-        'تم بنجاح',
-        'تم إضافة الدورة ${cycle.name}',
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[800],
-      );
-    } catch (e) {
-      print('Error adding cycle: $e');
-      Get.snackbar(
-        'خطأ',
-        'حدث خطأ أثناء حفظ البيانات',
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
-      );
-    }
+    Get.back();
+    Get.snackbar(
+      'تم بنجاح',
+      'تم إضافة الدورة ${cycle.name}',
+      backgroundColor: Colors.green[100],
+      colorText: Colors.green[800],
+    );
+  } catch (e) {
+    print('Error adding cycle: $e');
+    print('Stack trace: ${StackTrace.current}');
+    Get.snackbar(
+      'خطأ',
+      'حدث خطأ أثناء حفظ البيانات: $e',
+      backgroundColor: Colors.red[100],
+      colorText: Colors.red[800],
+    );
   }
+}
+
+
+// أضف هذه الدالة في HomeController
+Future<void> checkCyclesCollection() async {
+  try {
+    print('Checking cycles collection...');
+    final cyclesRef = _firestore.collection('cycles');
+    final snapshot = await cyclesRef.get();
+    
+    print('Total cycles in Firebase: ${snapshot.docs.length}');
+    for (var doc in snapshot.docs) {
+      print('Document ID: ${doc.id}');
+      print('Document data: ${doc.data()}');
+    }
+
+    // طباعة الدورات المحلية أيضاً
+    print('Local cycles: ${cycles.length}');
+    for (var cycle in cycles) {
+      print('Local cycle - ID: ${cycle.id}, Name: ${cycle.name}');
+    }
+  } catch (e) {
+    print('Error checking cycles: $e');
+  }
+}
+
+
+
 
   bool _validateNewCycle(Cycle cycle) {
     // Add any validation logic based on Remote Config
@@ -250,29 +318,54 @@ class HomeController extends GetxController {
     }
   }
 
-  // Delete from both local storage and Firebase
-  Future<void> deleteFullCycle(String cycleId) async {
-    try {
-      // Delete from local list
-      cycles.removeWhere((cycle) => cycle.id == cycleId);
+Future<void> deleteFullCycle(String cycleId) async {
+  try {
+    print('Starting to delete cycle: $cycleId');
+    
+    // أولاً: حذف من Firebase
+    print('Deleting from Firebase...');
+    await _firestore.collection('cycles').doc(cycleId).delete();
+    print('Successfully deleted from Firebase');
 
-      // Delete from local storage
-      await storageProvider.saveCycles(cycles);
+    // ثانياً: حذف من القائمة المحلية
+    cycles.removeWhere((cycle) => cycle.id == cycleId);
+    print('Removed from local list');
 
-      // Delete from Firebase
-      await _firestore.collection('cycles').doc(cycleId).delete();
+    // ثالثاً: تحديث التخزين المحلي
+    await storageProvider.saveCycles(cycles);
+    print('Updated local storage');
 
-      Get.snackbar(
-        'تم الحذف',
-        'تم حذف الدورة من التطبيق والسيرفر',
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[800],
-      );
-    } catch (e) {
-      print('Error deleting cycle completely: $e');
-      throw e;
-    }
+    Get.snackbar(
+      'تم الحذف',
+      'تم حذف الدورة بنجاح',
+      backgroundColor: Colors.green[100],
+      colorText: Colors.green[800],
+    );
+  } catch (e) {
+    print('Error deleting cycle: $e');
+    Get.snackbar(
+      'خطأ',
+      'حدث خطأ أثناء حذف الدورة: $e',
+      backgroundColor: Colors.red[100],
+      colorText: Colors.red[800],
+    );
+    throw e;
   }
+}
+
+Future<void> cleanupTestCollection() async {
+  try {
+    print('Cleaning up test collection...');
+    final testDocs = await _firestore.collection('test').get();
+    for (var doc in testDocs.docs) {
+      await doc.reference.delete();
+    }
+    print('Test collection cleaned up successfully');
+  } catch (e) {
+    print('Error cleaning up test collection: $e');
+  }
+}
+
 
   // Sync specific cycle with Firebase
   Future<void> syncWithFirebase(String cycleId) async {

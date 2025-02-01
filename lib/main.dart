@@ -1,5 +1,6 @@
 // lib/main.dart
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -11,35 +12,32 @@ import 'firebase_options.dart';
 import 'app/routes/app_pages.dart';
 import 'app/core/theme/app_theme.dart';
 
+// في main.dart
+
+// في main.dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    // تهيئة Firebase
+    print('Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    print('Firebase initialized successfully');
 
-    // تهيئة Local Storage
+    // اختبار الاتصال بدون إنشاء collection test
+    final firestore = FirebaseFirestore.instance;
+    try {
+      await firestore.collection('cycles').get();
+      print('Firestore connection test successful');
+    } catch (e) {
+      print('Firestore test failed: $e');
+    }
+
     await GetStorage.init();
-
-    // تهيئة Remote Config
     final remoteConfig = RemoteConfigService();
     await remoteConfig.initialize();
-
-    // التحقق من وضع الصيانة
-    if (remoteConfig.isMaintenanceMode) {
-      runApp(MaintenanceApp());
-      return;
-    }
-
-    // التحقق من وجود تحديث إجباري
-    if (remoteConfig.requiresUpdate) {
-      runApp(UpdateRequiredApp());
-      return;
-    }
-
-    // تشغيل التطبيق الرئيسي
+    
     runApp(MyApp());
   } catch (e) {
     print('Error in initialization: $e');

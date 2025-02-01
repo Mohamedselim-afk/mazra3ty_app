@@ -28,6 +28,7 @@ class HomeView extends GetView<HomeController> {
         ),
       ),
       floatingActionButton: _buildAddButton(),
+      
     );
   }
 
@@ -51,35 +52,58 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildHeader() {
-    return FadeInDown(
-      duration: Duration(milliseconds: 800),
-      child: Container(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          children: [
-            ShakeX(
-              duration: Duration(milliseconds: 3000),
-              child: Text(
-                'مزرعتي',
-                style: ModernTheme.titleStyle.copyWith(
-                  color: Colors.green[800],
-                  fontSize: 32,
+// في HomeView
+_buildHeader() {
+  return FadeInDown(
+    duration: Duration(milliseconds: 800),
+    child: Container(
+      padding: EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShakeX(
+                  duration: Duration(milliseconds: 3000),
+                  child: Text(
+                    'مزرعتي',
+                    style: ModernTheme.titleStyle.copyWith(
+                      color: Colors.green[800],
+                      fontSize: 32,
+                    ),
+                  ),
                 ),
-              ),
+                SizedBox(height: 8),
+                Text(
+                  'إدارة دورات التربية بسهولة',
+                  style: ModernTheme.subtitleStyle.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 8),
-            Text(
-              'إدارة دورات التربية بسهولة',
-              style: ModernTheme.subtitleStyle.copyWith(
-                color: Colors.grey[600],
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.cleaning_services_outlined, color: Colors.green[800]),
+                onPressed: () => controller.cleanupTestCollection(),
+                tooltip: 'تنظيف البيانات التجريبية',
               ),
-            ),
-          ],
-        ),
+              IconButton(
+                icon: Icon(Icons.refresh, color: Colors.green[800]),
+                onPressed: () => controller.checkCyclesCollection(),
+                tooltip: 'تحديث وفحص البيانات',
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildNavigationCards() {
     return Padding(

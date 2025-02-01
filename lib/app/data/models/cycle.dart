@@ -17,28 +17,7 @@ class Cycle {
     required this.expenses,
   });
 
-  factory Cycle.fromJson(Map<String, dynamic> json) {
-    return Cycle(
-      id: json['id'],
-      name: json['name'],
-      startDate: DateTime.parse(json['startDate']),
-      expectedSaleDate: DateTime.parse(json['expectedSaleDate']),
-      chicksCount: json['chicksCount'],
-      expenses: (json['expenses'] as List)
-          .map((e) => Expense.fromJson(e))
-          .toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name, 
-    'startDate': startDate.toIso8601String(),
-    'expectedSaleDate': expectedSaleDate.toIso8601String(),
-    'chicksCount': chicksCount,
-    'expenses': expenses.map((e) => e.toJson()).toList(),
-  };
-
+  // إضافة getters لحساب القيم المطلوبة
   double get totalExpenses => 
     expenses.fold(0, (sum, expense) => sum + expense.totalAmount);
 
@@ -54,6 +33,44 @@ class Cycle {
     final totalDays = expectedSaleDate.difference(startDate).inDays;
     final passedDays = DateTime.now().difference(startDate).inDays;
     return (passedDays / totalDays).clamp(0.0, 1.0);
+  }
+
+  Map<String, dynamic> toJson() {
+    try {
+      print('Converting cycle to JSON - ID: $id');
+      final json = {
+        'id': id,
+        'name': name,
+        'startDate': startDate.toIso8601String(),
+        'expectedSaleDate': expectedSaleDate.toIso8601String(),
+        'chicksCount': chicksCount,
+        'expenses': expenses.map((e) => e.toJson()).toList(),
+      };
+      print('Successfully converted to JSON: $json');
+      return json;
+    } catch (e) {
+      print('Error converting cycle to JSON: $e');
+      rethrow;
+    }
+  }
+
+  factory Cycle.fromJson(Map<String, dynamic> json) {
+    try {
+      print('Creating cycle from JSON: $json');
+      return Cycle(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        startDate: DateTime.parse(json['startDate'] as String),
+        expectedSaleDate: DateTime.parse(json['expectedSaleDate'] as String),
+        chicksCount: json['chicksCount'] as int,
+        expenses: (json['expenses'] as List? ?? [])
+            .map((e) => Expense.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+    } catch (e) {
+      print('Error creating cycle from JSON: $e');
+      rethrow;
+    }
   }
 
   Cycle copyWith({

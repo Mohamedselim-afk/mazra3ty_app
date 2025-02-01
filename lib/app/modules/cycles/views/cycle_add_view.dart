@@ -345,7 +345,9 @@ class AddCycleView extends GetView<CycleController> {
           onPressed: () {
             if (formKey.currentState!.validate()) {
               final newCycle = Cycle(
-                id: DateTime.now().toString(),
+                id: DateTime.now()
+                    .millisecondsSinceEpoch
+                    .toString(), // تأكد من أن الـ ID فريد
                 name: nameController.text,
                 startDate: DateTime.parse(startDateController.text),
                 expectedSaleDate: DateTime.parse(endDateController.text),
