@@ -18,29 +18,33 @@ class ReportController extends GetxController {
     createReports();
   }
 
+  // إنشاء التقارير من البيانات المتوفرة
   void createReports() {
     try {
       isLoading.value = true;
       final cycles = homeController.cycles;
       reports.assignAll(cycles.map((cycle) => CycleReport(
-        cycleId: cycle.id,
-        cycleName: cycle.name,
-        startDate: cycle.startDate,
-        expectedEndDate: cycle.expectedSaleDate,
-        chicksCount: cycle.chicksCount,
-        treasuryAmount: cycle.treasuryAmount, // إضافة قيمة الخزانة
-        expenses: cycle.expenses.map((e) => ExpenseReport(
-          name: e.name,
-          date: e.date,
-          totalAmount: e.totalAmount,
-          paidAmount: e.paidAmount,
-        )).toList(),
-      )));
+            cycleId: cycle.id,
+            cycleName: cycle.name,
+            startDate: cycle.startDate,
+            expectedEndDate: cycle.expectedSaleDate,
+            chicksCount: cycle.chicksCount,
+            treasuryAmount: cycle.treasuryAmount,
+            expenses: cycle.expenses
+                .map((e) => ExpenseReport(
+                      name: e.name,
+                      date: e.date,
+                      totalAmount: e.totalAmount,
+                      paidAmount: e.paidAmount,
+                    ))
+                .toList(),
+          )));
     } finally {
       isLoading.value = false;
     }
   }
 
+  // حذف دورة
   Future<void> deleteCycle(String cycleId, DeleteMode mode) async {
     try {
       switch (mode) {
@@ -51,10 +55,9 @@ class ReportController extends GetxController {
           await homeController.deleteFullCycle(cycleId);
           break;
       }
-      
+
       reports.removeWhere((report) => report.cycleId == cycleId);
       Get.back();
-      
     } catch (e) {
       print('Error deleting cycle: $e');
       Get.snackbar(
@@ -69,29 +72,47 @@ class ReportController extends GetxController {
   Future<void> generatePDF(CycleReport report) async {
     try {
       final pdf = pw.Document();
+      // استخدام الخط العربي
       final arabicFont = await PdfGoogleFonts.cairoRegular();
       final arabicBoldFont = await PdfGoogleFonts.cairoBold();
 
       pdf.addPage(
-        pw.Page(
+        pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
-          build: (context) => pw.Directionality(
-            textDirection: pw.TextDirection.rtl,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                _buildReportHeader(report, arabicBoldFont),
-                pw.SizedBox(height: 20),
-                _buildCycleInfo(report, arabicFont, arabicBoldFont),
-                pw.SizedBox(height: 20),
-                _buildTreasuryInfo(report, arabicFont, arabicBoldFont), // إضافة قسم معلومات الخزانة
-                pw.SizedBox(height: 20),
-                _buildExpensesSection(report, arabicFont, arabicBoldFont),
-                pw.SizedBox(height: 20),
-                _buildSummary(report, arabicFont, arabicBoldFont),
-              ],
-            ),
+          margin: pw.EdgeInsets.all(20),
+          // تعيين اتجاه الصفحة من اليمين إلى اليسار
+          textDirection: pw.TextDirection.rtl,
+          theme: pw.ThemeData.withFont(
+            base: arabicFont,
+            bold: arabicBoldFont,
           ),
+          build: (context) => [
+            _buildReportHeader(report, arabicBoldFont),
+            pw.SizedBox(height: 20),
+            _buildBoxedSection(
+              title: 'معلومات الدورة الأساسية',
+              content: _buildCycleInfo(report, arabicFont),
+              boldFont: arabicBoldFont,
+            ),
+            pw.SizedBox(height: 15),
+            _buildBoxedSection(
+              title: 'بيانات الخزانة',
+              content: _buildTreasuryInfo(report, arabicFont),
+              boldFont: arabicBoldFont,
+            ),
+            pw.SizedBox(height: 15),
+            _buildBoxedSection(
+              title: 'تفاصيل المصروفات',
+              content: _buildExpensesTable(report, arabicFont, arabicBoldFont),
+              boldFont: arabicBoldFont,
+            ),
+            pw.SizedBox(height: 15),
+            _buildBoxedSection(
+              title: 'الملخص النهائي',
+              content: _buildFinalSummary(report, arabicFont),
+              boldFont: arabicBoldFont,
+            ),
+          ],
         ),
       );
 
@@ -110,22 +131,290 @@ class ReportController extends GetxController {
     }
   }
 
+// تحسين شكل رأس التقرير
   pw.Widget _buildReportHeader(CycleReport report, pw.Font boldFont) {
-    return pw.Center(
+    return pw.Container(
+      padding: pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.green50,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.green800, width: 1),
+      ),
       child: pw.Column(
         children: [
           pw.Text(
             'تقرير دورة: ${report.cycleName}',
             style: pw.TextStyle(
               font: boldFont,
-              fontSize: 24,
+              fontSize: 20,
+              color: PdfColors.green900,
+            ),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.SizedBox(height: 5),
+          pw.Text(
+            'تاريخ التقرير: ${_formatDate(DateTime.now())}',
+            style: pw.TextStyle(font: boldFont, fontSize: 14),
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+// إطار موحد للأقسام
+  pw.Widget _buildBoxedSection({
+    required String title,
+    required pw.Widget content,
+    required pw.Font boldFont,
+  }) {
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Container(
+            padding: pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.green100,
+              borderRadius:
+                  pw.BorderRadius.vertical(top: pw.Radius.circular(8)),
+            ),
+            child: pw.Text(
+              title,
+              style: pw.TextStyle(
+                font: boldFont,
+                color: PdfColors.green900,
+                fontSize: 16,
+              ),
+              textAlign: pw.TextAlign.center,
             ),
           ),
+          pw.Container(
+            padding: pw.EdgeInsets.all(10),
+            child: content,
+          ),
+        ],
+      ),
+    );
+  }
+
+// تحسين عرض معلومات الدورة
+  pw.Widget _buildCycleInfo(CycleReport report, pw.Font font) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildInfoRow('عدد الكتاكيت:', '${report.chicksCount}', font),
+        _buildInfoRow('تاريخ البداية:', _formatDate(report.startDate), font),
+        _buildInfoRow(
+            'تاريخ البيع المتوقع:', _formatDate(report.expectedEndDate), font),
+      ],
+    );
+  }
+
+// تحسين عرض معلومات الخزانة
+  pw.Widget _buildTreasuryInfo(CycleReport report, pw.Font font) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildInfoRow('المبلغ الأساسي في الخزانة:',
+            '${_formatCurrency(report.treasuryAmount)}', font),
+        _buildInfoRow('إجمالي المصروفات المدفوعة:',
+            '${_formatCurrency(report.totalPaid)}', font),
+        _buildInfoRow(
+          'المتبقي في الخزانة:',
+          _formatCurrency(report.treasuryAmount - report.totalPaid),
+          font,
+          valueColor: (report.treasuryAmount - report.totalPaid) < 0
+              ? PdfColors.red
+              : PdfColors.green,
+        ),
+      ],
+    );
+  }
+
+// تحسين جدول المصروفات
+  pw.Widget _buildExpensesTable(
+      CycleReport report, pw.Font font, pw.Font boldFont) {
+    return pw.Container(
+      alignment: pw.Alignment.center,
+      child: pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey400),
+        defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+        tableWidth: pw.TableWidth.max,
+        columnWidths: {
+        0: pw.FlexColumnWidth(2.5), // المتبقي
+        1: pw.FlexColumnWidth(2.5), // المدفوع
+        2: pw.FlexColumnWidth(2.5), // المبلغ الكلي
+        3: pw.FlexColumnWidth(2.5), // التاريخ
+        4: pw.FlexColumnWidth(2.5), // الصنف
+        },
+        children: [
+          // رأس الجدول
+          pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: PdfColors.green100,
+            ),
+            children: [
+            _buildHeaderCell('المتبقي', boldFont),
+            _buildHeaderCell('المدفوع', boldFont),
+            _buildHeaderCell('المبلغ الكلي', boldFont),
+            _buildHeaderCell('التاريخ', boldFont),
+            _buildHeaderCell('الصنف', boldFont),
+            ],
+          ),
+          // صفوف البيانات
+          ...report.expenses.map((expense) {
+            final remaining = expense.totalAmount - expense.paidAmount;
+            return pw.TableRow(
+              children: [
+              _buildDataCell(
+                _formatCurrency(remaining), 
+                font,
+                textColor: remaining > 0 ? PdfColors.red : PdfColors.green,
+              ), // المتبقي
+              _buildDataCell(_formatCurrency(expense.paidAmount), font), // المدفوع
+              _buildDataCell(_formatCurrency(expense.totalAmount), font), // المبلغ الكلي
+              _buildDataCell(_formatDate(expense.date), font), // التاريخ
+              _buildDataCell(expense.name, font), // الصنف
+              ],
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+// خلية عنوان في الجدول
+pw.Widget _buildHeaderCell(String text, pw.Font font) {
+  return pw.Container(
+    padding: pw.EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+    alignment: pw.Alignment.center,
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(
+        font: font,
+        color: PdfColors.green900,
+      ),
+      textAlign: pw.TextAlign.center,
+    ),
+  );
+}
+
+// خلية بيانات في الجدول
+pw.Widget _buildDataCell(String text, pw.Font font, {PdfColor? textColor}) {
+  return pw.Container(
+    padding: pw.EdgeInsets.symmetric(vertical: 8, horizontal: 5),
+    alignment: pw.Alignment.center,
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(
+        font: font,
+        color: textColor,
+      ),
+      textAlign: pw.TextAlign.center,
+    ),
+  );
+}
+
+// صف عناوين الجدول
+  pw.TableRow _buildTableHeader(pw.Font boldFont) {
+    final headers = ['الصنف', 'التاريخ', 'المبلغ الكلي', 'المدفوع', 'المتبقي'];
+    return pw.TableRow(
+      decoration: pw.BoxDecoration(color: PdfColors.grey200),
+      children: headers
+          .map((text) => pw.Container(
+                alignment: pw.Alignment.center,
+                padding: pw.EdgeInsets.all(8),
+                child: pw.Text(
+                  text,
+                  style: pw.TextStyle(font: boldFont),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ))
+          .toList(),
+    );
+  }
+
+// صف بيانات المصروفات
+  pw.TableRow _buildExpenseRow(ExpenseReport expense, pw.Font font) {
+    final remaining = expense.totalAmount - expense.paidAmount;
+    return pw.TableRow(
+      children: [
+        _buildTableCell(expense.name, font),
+        _buildTableCell(_formatDate(expense.date), font),
+        _buildTableCell(_formatCurrency(expense.totalAmount), font),
+        _buildTableCell(_formatCurrency(expense.paidAmount), font),
+        _buildTableCell(
+          _formatCurrency(remaining),
+          font,
+          textColor: remaining > 0 ? PdfColors.red : PdfColors.green,
+        ),
+      ],
+    );
+  }
+
+// خلية في الجدول
+  pw.Widget _buildTableCell(String text, pw.Font font, {PdfColor? textColor}) {
+    return pw.Container(
+      padding: pw.EdgeInsets.all(8),
+      alignment: pw.Alignment.center,
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          font: font,
+          color: textColor,
+        ),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
+  }
+
+// تحسين عرض الملخص النهائي
+  pw.Widget _buildFinalSummary(CycleReport report, pw.Font font) {
+    final treasuryRemaining = report.treasuryAmount - report.totalPaid;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildInfoRow(
+            'إجمالي المصروفات:', _formatCurrency(report.totalExpenses), font),
+        _buildInfoRow(
+            'إجمالي المدفوع:', _formatCurrency(report.totalPaid), font),
+        _buildInfoRow(
+          'إجمالي المتبقي من المصروفات:',
+          _formatCurrency(report.totalRemaining),
+          font,
+          valueColor:
+              report.totalRemaining > 0 ? PdfColors.red : PdfColors.green,
+        ),
+        _buildInfoRow(
+          'المتبقي في الخزانة:',
+          _formatCurrency(treasuryRemaining),
+          font,
+          valueColor: treasuryRemaining < 0 ? PdfColors.red : PdfColors.green,
+        ),
+      ],
+    );
+  }
+
+// صف معلومات عام
+  pw.Widget _buildInfoRow(String label, String value, pw.Font font,
+      {PdfColor? valueColor}) {
+    return pw.Padding(
+      padding: pw.EdgeInsets.symmetric(vertical: 4),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(label, style: pw.TextStyle(font: font)),
           pw.Text(
-            'تاريخ التقرير: ${DateTime.now().toString().split(' ')[0]}',
+            value,
             style: pw.TextStyle(
-              font: boldFont,
-              fontSize: 14,
+              font: font,
+              color: valueColor,
             ),
           ),
         ],
@@ -133,140 +422,19 @@ class ReportController extends GetxController {
     );
   }
 
-  pw.Widget _buildCycleInfo(CycleReport report, pw.Font font, pw.Font boldFont) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'معلومات الدورة',
-          style: pw.TextStyle(font: boldFont, fontSize: 18),
-        ),
-        pw.SizedBox(height: 10),
-        pw.Text('عدد الكتاكيت: ${report.chicksCount}', 
-          style: pw.TextStyle(font: font)),
-        pw.Text(
-          'تاريخ البداية: ${report.startDate.toString().split(' ')[0]}',
-          style: pw.TextStyle(font: font),
-        ),
-        pw.Text(
-          'تاريخ البيع المتوقع: ${report.expectedEndDate.toString().split(' ')[0]}',
-          style: pw.TextStyle(font: font),
-        ),
-      ],
-    );
+// تنسيق التاريخ
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  // إضافة قسم معلومات الخزانة
-  pw.Widget _buildTreasuryInfo(CycleReport report, pw.Font font, pw.Font boldFont) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'معلومات الخزانة',
-          style: pw.TextStyle(font: boldFont, fontSize: 18),
-        ),
-        pw.SizedBox(height: 10),
-        pw.Text(
-          'المبلغ الأساسي في الخزانة: ${report.treasuryAmount} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-        pw.Text(
-          'إجمالي المصروفات المدفوعة: ${report.totalPaid} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-        pw.Text(
-          'المتبقي في الخزانة: ${report.treasuryAmount - report.totalPaid} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-      ],
-    );
-  }
-
-  pw.Widget _buildExpensesSection(CycleReport report, pw.Font font, pw.Font boldFont) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'المصروفات',
-          style: pw.TextStyle(font: boldFont, fontSize: 18),
-        ),
-        pw.SizedBox(height: 10),
-        _buildExpensesTable(report, font, boldFont),
-      ],
-    );
-  }
-
-  pw.Widget _buildExpensesTable(CycleReport report, pw.Font font, pw.Font boldFont) {
-    return pw.Table(
-      border: pw.TableBorder.all(),
-      children: [
-        pw.TableRow(
-          children: [
-            _buildHeaderCell('الصنف', boldFont),
-            _buildHeaderCell('التاريخ', boldFont),
-            _buildHeaderCell('المبلغ الكلي', boldFont),
-            _buildHeaderCell('المدفوع', boldFont),
-            _buildHeaderCell('المتبقي', boldFont),
-          ],
-        ),
-        ...report.expenses.map((expense) => pw.TableRow(
-          children: [
-            _buildCell(expense.name, font),
-            _buildCell(expense.date.toString().split(' ')[0], font),
-            _buildCell('${expense.totalAmount} ج.م', font),
-            _buildCell('${expense.paidAmount} ج.م', font),
-            _buildCell('${expense.totalAmount - expense.paidAmount} ج.م', font),
-          ],
-        )),
-      ],
-    );
-  }
-
-  pw.Widget _buildHeaderCell(String text, pw.Font font) {
-    return pw.Padding(
-      padding: pw.EdgeInsets.all(5),
-      child: pw.Text(text, style: pw.TextStyle(font: font)),
-    );
-  }
-
-  pw.Widget _buildCell(String text, pw.Font font) {
-    return pw.Padding(
-      padding: pw.EdgeInsets.all(5),
-      child: pw.Text(text, style: pw.TextStyle(font: font)),
-    );
-  }
-
-  pw.Widget _buildSummary(CycleReport report, pw.Font font, pw.Font boldFont) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'الملخص النهائي',
-          style: pw.TextStyle(font: boldFont, fontSize: 18),
-        ),
-        pw.SizedBox(height: 10),
-        pw.Text(
-          'إجمالي المصروفات: ${report.totalExpenses} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-        pw.Text(
-          'إجمالي المدفوع: ${report.totalPaid} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-        pw.Text(
-          'إجمالي المتبقي من المصروفات: ${report.totalRemaining} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-        pw.Text(
-          'المتبقي في الخزانة: ${report.treasuryAmount - report.totalPaid} ج.م',
-          style: pw.TextStyle(font: font),
-        ),
-      ],
-    );
+// تنسيق المبالغ المالية
+  String _formatCurrency(double amount) {
+    return '${amount.toStringAsFixed(2)} ج.م';
   }
 }
 
+// تعريف أنواع الحذف
 enum DeleteMode {
-  localOnly,
-  complete,
+  localOnly, // حذف محلي فقط
+  complete, // حذف كامل
 }
