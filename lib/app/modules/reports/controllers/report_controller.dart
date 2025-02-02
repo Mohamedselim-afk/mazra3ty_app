@@ -28,6 +28,7 @@ class ReportController extends GetxController {
         startDate: cycle.startDate,
         expectedEndDate: cycle.expectedSaleDate,
         chicksCount: cycle.chicksCount,
+        treasuryAmount: cycle.treasuryAmount, // إضافة قيمة الخزانة
         expenses: cycle.expenses.map((e) => ExpenseReport(
           name: e.name,
           date: e.date,
@@ -51,10 +52,8 @@ class ReportController extends GetxController {
           break;
       }
       
-      // Remove from reports list
       reports.removeWhere((report) => report.cycleId == cycleId);
-      
-      Get.back(); // Close dialog
+      Get.back();
       
     } catch (e) {
       print('Error deleting cycle: $e');
@@ -81,36 +80,13 @@ class ReportController extends GetxController {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Center(
-                  child: pw.Text(
-                    'تقرير دورة: ${report.cycleName}',
-                    style: pw.TextStyle(
-                      font: arabicBoldFont,
-                      fontSize: 24,
-                    ),
-                  ),
-                ),
+                _buildReportHeader(report, arabicBoldFont),
                 pw.SizedBox(height: 20),
-                pw.Text(
-                  'معلومات الدورة',
-                  style: pw.TextStyle(font: arabicBoldFont, fontSize: 18),
-                ),
-                pw.Text('عدد الكتاكيت: ${report.chicksCount}', 
-                  style: pw.TextStyle(font: arabicFont)),
-                pw.Text(
-                  'تاريخ البداية: ${report.startDate.toString().split(' ')[0]}',
-                  style: pw.TextStyle(font: arabicFont),
-                ),
-                pw.Text(
-                  'تاريخ البيع المتوقع: ${report.expectedEndDate.toString().split(' ')[0]}',
-                  style: pw.TextStyle(font: arabicFont),
-                ),
+                _buildCycleInfo(report, arabicFont, arabicBoldFont),
                 pw.SizedBox(height: 20),
-                pw.Text(
-                  'المصروفات',
-                  style: pw.TextStyle(font: arabicBoldFont, fontSize: 18),
-                ),
-                _buildExpensesTable(report, arabicFont, arabicBoldFont),
+                _buildTreasuryInfo(report, arabicFont, arabicBoldFont), // إضافة قسم معلومات الخزانة
+                pw.SizedBox(height: 20),
+                _buildExpensesSection(report, arabicFont, arabicBoldFont),
                 pw.SizedBox(height: 20),
                 _buildSummary(report, arabicFont, arabicBoldFont),
               ],
@@ -132,6 +108,92 @@ class ReportController extends GetxController {
         colorText: Colors.red[800],
       );
     }
+  }
+
+  pw.Widget _buildReportHeader(CycleReport report, pw.Font boldFont) {
+    return pw.Center(
+      child: pw.Column(
+        children: [
+          pw.Text(
+            'تقرير دورة: ${report.cycleName}',
+            style: pw.TextStyle(
+              font: boldFont,
+              fontSize: 24,
+            ),
+          ),
+          pw.Text(
+            'تاريخ التقرير: ${DateTime.now().toString().split(' ')[0]}',
+            style: pw.TextStyle(
+              font: boldFont,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildCycleInfo(CycleReport report, pw.Font font, pw.Font boldFont) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'معلومات الدورة',
+          style: pw.TextStyle(font: boldFont, fontSize: 18),
+        ),
+        pw.SizedBox(height: 10),
+        pw.Text('عدد الكتاكيت: ${report.chicksCount}', 
+          style: pw.TextStyle(font: font)),
+        pw.Text(
+          'تاريخ البداية: ${report.startDate.toString().split(' ')[0]}',
+          style: pw.TextStyle(font: font),
+        ),
+        pw.Text(
+          'تاريخ البيع المتوقع: ${report.expectedEndDate.toString().split(' ')[0]}',
+          style: pw.TextStyle(font: font),
+        ),
+      ],
+    );
+  }
+
+  // إضافة قسم معلومات الخزانة
+  pw.Widget _buildTreasuryInfo(CycleReport report, pw.Font font, pw.Font boldFont) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'معلومات الخزانة',
+          style: pw.TextStyle(font: boldFont, fontSize: 18),
+        ),
+        pw.SizedBox(height: 10),
+        pw.Text(
+          'المبلغ الأساسي في الخزانة: ${report.treasuryAmount} ج.م',
+          style: pw.TextStyle(font: font),
+        ),
+        pw.Text(
+          'إجمالي المصروفات المدفوعة: ${report.totalPaid} ج.م',
+          style: pw.TextStyle(font: font),
+        ),
+        pw.Text(
+          'المتبقي في الخزانة: ${report.treasuryAmount - report.totalPaid} ج.م',
+          style: pw.TextStyle(font: font),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildExpensesSection(CycleReport report, pw.Font font, pw.Font boldFont) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'المصروفات',
+          style: pw.TextStyle(font: boldFont, fontSize: 18),
+        ),
+        pw.SizedBox(height: 10),
+        _buildExpensesTable(report, font, boldFont),
+      ],
+    );
   }
 
   pw.Widget _buildExpensesTable(CycleReport report, pw.Font font, pw.Font boldFont) {
@@ -179,9 +241,10 @@ class ReportController extends GetxController {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'الملخص',
+          'الملخص النهائي',
           style: pw.TextStyle(font: boldFont, fontSize: 18),
         ),
+        pw.SizedBox(height: 10),
         pw.Text(
           'إجمالي المصروفات: ${report.totalExpenses} ج.م',
           style: pw.TextStyle(font: font),
@@ -191,7 +254,11 @@ class ReportController extends GetxController {
           style: pw.TextStyle(font: font),
         ),
         pw.Text(
-          'إجمالي المتبقي: ${report.totalRemaining} ج.م',
+          'إجمالي المتبقي من المصروفات: ${report.totalRemaining} ج.م',
+          style: pw.TextStyle(font: font),
+        ),
+        pw.Text(
+          'المتبقي في الخزانة: ${report.treasuryAmount - report.totalPaid} ج.م',
           style: pw.TextStyle(font: font),
         ),
       ],

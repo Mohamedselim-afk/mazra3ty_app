@@ -93,33 +93,63 @@ class ReportView extends GetView<ReportController> {
   }
 
   Widget _buildReportCard(CycleReport report) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          _buildReportHeader(report),
-          Divider(),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildSummaryRow('عدد الكتاكيت', '${report.chicksCount}'),
-                _buildSummaryRow('إجمالي المصروفات', '${report.totalExpenses} ج.م'),
-                _buildSummaryRow('إجمالي المدفوع', '${report.totalPaid} ج.م'),
-                _buildSummaryRow('إجمالي المتبقي', '${report.totalRemaining} ج.م'),
-              ],
-            ),
+  return Card(
+    margin: EdgeInsets.only(bottom: 16),
+    elevation: 4,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      children: [
+        _buildReportHeader(report),
+        Divider(),
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // إضافة معلومات الخزانة
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    _buildSummaryRow(
+                      'مبلغ الخزانة الأساسي',
+                      '${report.treasuryAmount} ج.م',
+                      isBalance: true
+                    ),
+                    _buildSummaryRow(
+                      'المتبقي في الخزانة',
+                      '${report.treasuryAmount - report.totalPaid} ج.م',
+                      isBalance: true,
+                      isNegative: (report.treasuryAmount - report.totalPaid) < 0
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+              // المعلومات الحالية
+              _buildSummaryRow('عدد الكتاكيت', '${report.chicksCount}'),
+              _buildSummaryRow('إجمالي المصروفات', '${report.totalExpenses} ج.م'),
+              _buildSummaryRow('إجمالي المدفوع', '${report.totalPaid} ج.م'),
+              _buildSummaryRow(
+                'إجمالي المتبقي',
+                '${report.totalRemaining} ج.م',
+                isNegative: report.totalRemaining > 0
+              ),
+            ],
           ),
-          _buildExpensesDetails(report),
-          _buildCardActions(report),
-        ],
-      ),
-    );
-  }
+        ),
+        _buildExpensesDetails(report),
+        _buildCardActions(report),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildReportHeader(CycleReport report) {
     return Container(
@@ -179,34 +209,33 @@ class ReportView extends GetView<ReportController> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
-    final isNegativeValue = label.contains('المتبقي') && 
-        double.tryParse(value.replaceAll(' ج.م', ''))! > 0;
-    
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
+  Widget _buildSummaryRow(String label, String value, {bool isNegative = false, bool isBalance = false}) {
+  return Padding(
+    padding: EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14,
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isNegativeValue ? Colors.red : Colors.black,
-              fontSize: 16,
-            ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isBalance ? Colors.purple[700] : 
+                   isNegative ? Colors.red : Colors.black,
+            fontSize: 16,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildExpensesDetails(CycleReport report) {
     return ExpansionTile(

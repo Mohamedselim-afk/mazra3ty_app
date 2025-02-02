@@ -11,6 +11,7 @@ class AddCycleView extends GetView<CycleController> {
   final startDateController = TextEditingController();
   final endDateController = TextEditingController();
   final chicksCountController = TextEditingController();
+  final treasuryController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +38,8 @@ class AddCycleView extends GetView<CycleController> {
                     SizedBox(height: 20),
                     _buildNameField(),
                     SizedBox(height: 16),
+                    _buildTreasuryField(), // أضف هنا
+                    SizedBox(height: 16),
                     _buildChicksCountField(),
                     SizedBox(height: 20),
                     _buildTitle('تواريخ الدورة'),
@@ -52,6 +55,46 @@ class AddCycleView extends GetView<CycleController> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTreasuryField() {
+    return FadeInUp(
+      duration: Duration(milliseconds: 700),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextFormField(
+          controller: treasuryController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'قيمة الخزانة',
+            labelStyle: TextStyle(color: Colors.grey[600]),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+            prefixIcon: Icon(Icons.account_balance_wallet, color: Colors.green),
+            suffixText: 'ج.م',
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+          validator: (value) {
+            if (value?.isEmpty ?? true) return 'مطلوب';
+            if (double.tryParse(value!) == null) return 'أدخل رقم صحيح';
+            return null;
+          },
+        ),
       ),
     );
   }
@@ -345,15 +388,15 @@ class AddCycleView extends GetView<CycleController> {
           onPressed: () {
             if (formKey.currentState!.validate()) {
               final newCycle = Cycle(
-                id: DateTime.now()
-                    .millisecondsSinceEpoch
-                    .toString(), // تأكد من أن الـ ID فريد
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
                 name: nameController.text,
                 startDate: DateTime.parse(startDateController.text),
                 expectedSaleDate: DateTime.parse(endDateController.text),
                 chicksCount: int.parse(chicksCountController.text),
+                treasuryAmount: double.parse(treasuryController.text),
                 expenses: [],
               );
+
               controller.addNewCycle(newCycle);
             }
           },
