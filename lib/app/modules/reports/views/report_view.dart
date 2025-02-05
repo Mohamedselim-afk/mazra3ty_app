@@ -13,7 +13,7 @@ class ReportView extends GetView<ReportController> {
         if (controller.isLoading.value) {
           return _buildLoadingView();
         }
-        
+
         if (controller.reports.isEmpty) {
           return _buildEmptyView();
         }
@@ -93,63 +93,58 @@ class ReportView extends GetView<ReportController> {
   }
 
   Widget _buildReportCard(CycleReport report) {
-  return Card(
-    margin: EdgeInsets.only(bottom: 16),
-    elevation: 4,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-      children: [
-        _buildReportHeader(report),
-        Divider(),
-        Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // إضافة معلومات الخزانة
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.purple[50],
-                  borderRadius: BorderRadius.circular(8),
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _buildReportHeader(report),
+          Divider(),
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // إضافة معلومات الخزانة
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildSummaryRow('مبلغ الخزانة الأساسي',
+                          '${report.treasuryAmount} ج.م',
+                          isBalance: true),
+                      _buildSummaryRow('المتبقي في الخزانة',
+                          '${report.treasuryAmount - report.totalPaid} ج.م',
+                          isBalance: true,
+                          isNegative:
+                              (report.treasuryAmount - report.totalPaid) < 0),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildSummaryRow(
-                      'مبلغ الخزانة الأساسي',
-                      '${report.treasuryAmount} ج.م',
-                      isBalance: true
-                    ),
-                    _buildSummaryRow(
-                      'المتبقي في الخزانة',
-                      '${report.treasuryAmount - report.totalPaid} ج.م',
-                      isBalance: true,
-                      isNegative: (report.treasuryAmount - report.totalPaid) < 0
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 16),
-              // المعلومات الحالية
-              _buildSummaryRow('عدد الكتاكيت', '${report.chicksCount}'),
-              _buildSummaryRow('إجمالي المصروفات', '${report.totalExpenses} ج.م'),
-              _buildSummaryRow('إجمالي المدفوع', '${report.totalPaid} ج.م'),
-              _buildSummaryRow(
-                'إجمالي المتبقي',
-                '${report.totalRemaining} ج.م',
-                isNegative: report.totalRemaining > 0
-              ),
-            ],
+                SizedBox(height: 16),
+                // المعلومات الحالية
+                _buildSummaryRow('عدد الكتاكيت', '${report.chicksCount}'),
+                _buildSummaryRow(
+                    'إجمالي المصروفات', '${report.totalExpenses} ج.م'),
+                _buildSummaryRow('إجمالي المدفوع', '${report.totalPaid} ج.م'),
+                _buildSummaryRow(
+                    'إجمالي المتبقي', '${report.totalRemaining} ج.م',
+                    isNegative: report.totalRemaining > 0),
+              ],
+            ),
           ),
-        ),
-        _buildExpensesDetails(report),
-        _buildCardActions(report),
-      ],
-    ),
-  );
-}
-
+          _buildExpensesDetails(report),
+          _buildCardActions(report),
+        ],
+      ),
+    );
+  }
 
   Widget _buildReportHeader(CycleReport report) {
     return Container(
@@ -192,7 +187,7 @@ class ReportView extends GetView<ReportController> {
   Widget _buildStatusChip(CycleReport report) {
     final now = DateTime.now();
     final isActive = now.isBefore(report.expectedEndDate);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -209,33 +204,36 @@ class ReportView extends GetView<ReportController> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isNegative = false, bool isBalance = false}) {
-  return Padding(
-    padding: EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
+  Widget _buildSummaryRow(String label, String value,
+      {bool isNegative = false, bool isBalance = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
           ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isBalance ? Colors.purple[700] : 
-                   isNegative ? Colors.red : Colors.black,
-            fontSize: 16,
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isBalance
+                  ? Colors.purple[700]
+                  : isNegative
+                      ? Colors.red
+                      : Colors.black,
+              fontSize: 16,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Widget _buildExpensesDetails(CycleReport report) {
     return ExpansionTile(
@@ -278,26 +276,104 @@ class ReportView extends GetView<ReportController> {
     );
   }
 
-  Widget _buildCardActions(CycleReport report) {
-    return Padding(
-      padding: EdgeInsets.all(8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          IconButton(
-            icon: Icon(Icons.picture_as_pdf, color: Colors.blue),
-            onPressed: () => controller.generatePDF(report),
-            tooltip: 'تصدير PDF',
-          ),
-          IconButton(
-            icon: Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _showDeleteConfirmationDialog(report),
-            tooltip: 'حذف الدورة',
-          ),
-        ],
+Widget _buildCardActions(CycleReport report) {
+  return Padding(
+    padding: EdgeInsets.all(8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        IconButton(
+          icon: Icon(Icons.picture_as_pdf, color: Colors.blue),
+          onPressed: () => _showFinancialDataDialog(report),
+          tooltip: 'تصدير PDF',
+        ),
+        IconButton(
+          icon: Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _showDeleteConfirmationDialog(report),
+          tooltip: 'حذف الدورة',
+        ),
+      ],
+    ),
+  );
+}
+
+  
+
+  void _showFinancialDataDialog(CycleReport report) {
+  final totalRevenueController = TextEditingController();
+  final totalWeightController = TextEditingController();
+
+  Get.dialog(
+    AlertDialog(
+      title: Text('إدخال بيانات البيع'),
+      content: Container(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: totalRevenueController,
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'إجمالي المبيعات (ج.م)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.attach_money),
+              ),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: totalWeightController,
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'إجمالي الوزن (كجم)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.scale),
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: Text('إلغاء'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            try {
+              final totalRevenue = double.parse(totalRevenueController.text);
+              final totalWeight = double.parse(totalWeightController.text);
+              
+              // إنشاء نسخة جديدة من التقرير مع البيانات المالية
+              final updatedReport = report.copyWithFinancials(
+                totalRevenue: totalRevenue,
+                totalWeight: totalWeight,
+              );
+              
+              Get.back(); // إغلاق مربع الحوار
+              
+              // إنشاء PDF مع البيانات المحدثة
+              Get.find<ReportController>().generatePDF(updatedReport);
+              
+            } catch (e) {
+              Get.snackbar(
+                'خطأ',
+                'يرجى إدخال أرقام صحيحة',
+                backgroundColor: Colors.red[100],
+                colorText: Colors.red[800],
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+          ),
+          child: Text('إنشاء التقرير'),
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _showDeleteConfirmationDialog(CycleReport report) {
     Get.dialog(
@@ -318,7 +394,8 @@ class ReportView extends GetView<ReportController> {
             _buildDeleteOption(
               icon: Icons.phone_android,
               title: 'حذف من التطبيق فقط',
-              subtitle: 'سيتم حذف البيانات من التطبيق مع الاحتفاظ بها على السيرفر',
+              subtitle:
+                  'سيتم حذف البيانات من التطبيق مع الاحتفاظ بها على السيرفر',
               onTap: () {
                 Get.back();
                 controller.deleteCycle(report.cycleId, DeleteMode.localOnly);

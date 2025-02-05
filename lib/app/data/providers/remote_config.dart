@@ -23,9 +23,9 @@ class RemoteConfigService {
         'required_update': false,
         'max_chicks_count': 5000,
         'access_codes': jsonEncode({
-          'user1': '123456',
-          'user2': '789012',
-          'user3': '345678',
+          'user1': '329232',
+          'user2': '923292',
+          'user3': '922000',
         }),
         'feature_flags': jsonEncode({
           'enable_new_features': false,

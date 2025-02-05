@@ -11,12 +11,26 @@ class ReportController extends GetxController {
   final homeController = Get.find<HomeController>();
   final reports = <CycleReport>[].obs;
   final isLoading = true.obs;
+  final totalRevenueController = TextEditingController();
+  final totalWeightController = TextEditingController();
+  final selectedReportId = RxString('');
+
 
   @override
   void onInit() {
     super.onInit();
     createReports();
   }
+
+  @override
+  void onClose() {
+    totalRevenueController.dispose();
+    totalWeightController.dispose();
+    super.onClose();
+  }
+
+  
+
 
   // إنشاء التقارير من البيانات المتوفرة
   void createReports() {
@@ -44,6 +58,38 @@ class ReportController extends GetxController {
     }
   }
 
+
+    void updateFinancialData(String reportId) {
+    try {
+      final revenue = double.parse(totalRevenueController.text);
+      final weight = double.parse(totalWeightController.text);
+      
+      final index = reports.indexWhere((report) => report.cycleId == reportId);
+      if (index != -1) {
+        final updatedReport = reports[index].copyWithFinancials(
+          totalRevenue: revenue,
+          totalWeight: weight,
+        );
+        reports[index] = updatedReport;
+        
+        Get.snackbar(
+          'تم بنجاح',
+          'تم تحديث البيانات المالية',
+          backgroundColor: Colors.green[100],
+          colorText: Colors.green[800],
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        'يرجى التأكد من إدخال أرقام صحيحة',
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+      );
+    }
+  }
+
+
   // حذف دورة
   Future<void> deleteCycle(String cycleId, DeleteMode mode) async {
     try {
@@ -69,10 +115,10 @@ class ReportController extends GetxController {
     }
   }
 
+    // تحديث دالة إنشاء PDF لإضافة قسم الملخص المالي
   Future<void> generatePDF(CycleReport report) async {
     try {
       final pdf = pw.Document();
-      // استخدام الخط العربي
       final arabicFont = await PdfGoogleFonts.cairoRegular();
       final arabicBoldFont = await PdfGoogleFonts.cairoBold();
 
@@ -80,7 +126,6 @@ class ReportController extends GetxController {
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: pw.EdgeInsets.all(20),
-          // تعيين اتجاه الصفحة من اليمين إلى اليسار
           textDirection: pw.TextDirection.rtl,
           theme: pw.ThemeData.withFont(
             base: arabicFont,
@@ -108,8 +153,8 @@ class ReportController extends GetxController {
             ),
             pw.SizedBox(height: 15),
             _buildBoxedSection(
-              title: 'الملخص النهائي',
-              content: _buildFinalSummary(report, arabicFont),
+              title: 'الملخص المالي النهائي',
+              content: _buildFinancialSummary(report, arabicFont),
               boldFont: arabicBoldFont,
             ),
           ],
@@ -130,6 +175,70 @@ class ReportController extends GetxController {
       );
     }
   }
+
+
+
+
+  pw.Widget _buildFinancialSummary(CycleReport report, pw.Font font) {
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey100,
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      padding: pw.EdgeInsets.all(12),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // قسم المبيعات
+          _buildSectionTitle('بيانات المبيعات', font),
+          pw.SizedBox(height: 8),
+          _buildInfoRow('إجمالي المبيعات:', _formatCurrency(report.totalRevenue), font, valueColor: PdfColors.green700),
+          _buildInfoRow('إجمالي الوزن:', '${report.totalWeight.toStringAsFixed(2)} كجم', font),
+          _buildInfoRow('سعر الكيلو:', _formatCurrency(report.pricePerKilo), font),
+          _buildInfoRow('متوسط وزن الكتكوت:', '${report.averageChickWeight.toStringAsFixed(2)} كجم', font),
+          pw.SizedBox(height: 12),
+          pw.Divider(color: PdfColors.grey400),
+          pw.SizedBox(height: 12),
+
+          // قسم المصروفات والأرباح
+          _buildSectionTitle('الحسابات النهائية', font),
+          pw.SizedBox(height: 8),
+          _buildInfoRow('إجمالي المصروفات:', _formatCurrency(report.totalExpenses), font, valueColor: PdfColors.red700),
+          _buildInfoRow('المدفوع:', _formatCurrency(report.totalPaid), font),
+          _buildInfoRow('المتبقي من المصروفات:', _formatCurrency(report.totalRemaining), font,
+              valueColor: report.totalRemaining > 0 ? PdfColors.red700 : PdfColors.green700),
+          pw.SizedBox(height: 12),
+          pw.Divider(color: PdfColors.grey400),
+          pw.SizedBox(height: 12),
+
+          // الملخص النهائي
+          _buildSectionTitle('الملخص النهائي', font),
+          pw.SizedBox(height: 8),
+          _buildInfoRow('صافي الربح:', _formatCurrency(report.netProfit), font,
+              valueColor: report.netProfit >= 0 ? PdfColors.green700 : PdfColors.red700),
+          _buildInfoRow('المتبقي في الخزانة:', _formatCurrency(report.remainingTreasury), font,
+              valueColor: report.remainingTreasury >= 0 ? PdfColors.green700 : PdfColors.red700),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildSectionTitle(String title, pw.Font font) {
+    return pw.Text(
+      title,
+      style: pw.TextStyle(
+        font: font,
+        color: PdfColors.green900,
+        fontSize: 14,
+      ),
+    );
+  }
+
+  String _formatCurrencyValue(double amount) {
+    return '${amount.toStringAsFixed(2)} ج.م';
+  }
+
+
 
 // تحسين شكل رأس التقرير
   pw.Widget _buildReportHeader(CycleReport report, pw.Font boldFont) {
@@ -438,3 +547,4 @@ enum DeleteMode {
   localOnly, // حذف محلي فقط
   complete, // حذف كامل
 }
+
